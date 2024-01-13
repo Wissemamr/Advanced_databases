@@ -1,0 +1,89 @@
+1. Explication des requêtes  :
+----------------------------
+
+1. `CREATE TYPE adresseType AS OBJECT ( numero NUMBER(3), rue VARCHAR2(50), codePostal CHAR(5), ville VARCHAR2(20) ) NOT FINAL /`
+   - Cette requête crée un type d'objet nommé `adresseType`. Cet objet est composé des attributs suivants :
+     - `numero` : de type `NUMBER(3)` 
+     - `rue` : de type `VARCHAR2(50)` 
+     - `codePostal` : de type `CHAR(5)` (chaîne de caractères de longueur fixe de 5 caractères)
+     - `ville` : de type `VARCHAR2(20)` 
+   - L'ajout de `NOT FINAL` signifie que `adresseType` est défini en tant qu'objet de base et peut être étendu par d'autres types ( peut etre heritee)
+
+2. `CREATE TYPE adresseTypeM UNDER adresseType (email VARCHAR2(50));
+   - Cette requête crée un nouveau type d'objet nommé `adresseTypeM` qui est défini comme une sous-type (ou sous-objet) de `adresseType`. Cela signifie que `adresseTypeM` hérite de toutes les propriétés de `adresseType` et ajoute un nouvel attribut `email` de type `VARCHAR2(50)`.
+
+3. `CREATE TABLE Personnes (nom VARCHAR2(20), prenom VARCHAR2(20), adresse adresseType);`
+   - Cette requête crée une table appelée `Personnes`. Cette table contient trois colonnes :
+     - `nom` : de type `VARCHAR2(20)`
+     - `prenom` : de type `VARCHAR2(20)`
+     - `adresse` : de type `adresseType`, qui est un type d'objet que nous avons défini précédemment. Ainsi, la colonne `adresse` stocke des données de type `adresseType`.
+(chaîne de caractères de longueur maximale 20)
+4. `INSERT INTO Personnes VALUES ('c', 'f', adresseType(10, 'rue de la liberté', '06000', 'Bejaia'));`
+   - Cette requête insère une nouvelle ligne dans la table `Personnes`. Les valeurs insérées sont `'c'` pour le nom, `'f'` pour le prénom, et un objet `adresseType` avec les valeurs `10` pour le numéro, `'rue de la liberté'` pour la rue, `'06000'` pour le code postal, et `'Bejaia'` pour la ville.
+
+5. `INSERT INTO Personnes VALUES ('b', 'f', adresseTypeM(5, 'rue Didouche Mourad', '16000', 'Alger', 'bf@domain.fr'));`
+   - Cette requête insère une autre ligne dans la table `Personnes`. Les valeurs insérées sont `'b'` pour le nom, `'f'` pour le prénom, et un objet `adresseTypeM` avec les valeurs `5` pour le numéro, `'rue Didouche Mourad'` pour la rue, `'16000'` pour le code postal, `'Alger'` pour la ville, et `'bf@domain.fr'` pour l'e-mail.
+   -> SUBSTITUTION DES TYPES
+
+__________________________________________________________________________________________________________________
+
+2. Decrire le resultat des requêtes :
+-------------------------------------
+
+SELECT p.adresse.numero FROM Personnes p;
+
+Cette requête sélectionne la colonne numero de l'objet adresse pour chaque ligne de la table Personnes. Elle extrait le numéro de rue de chaque adresse.
+Le résultat sera une liste des numéros de rue de toutes les personnes enregistrées dans la table. Chaque ligne du résultat correspondra à un numéro de rue. 
+-> [5, 10]
+
+
+SELECT DISTINCT p.adresse.ville FROM Personnes p;
+
+Cette requête sélectionne la colonne ville de l'objet adresse pour chaque ligne de la table Personnes, en excluant les doublons grâce à l'utilisation de DISTINCT. Elle extrait le nom de la ville de chaque adresse.
+Le résultat sera une liste distincte des noms de villes associées aux adresses des personnes enregistrées dans la table. Si plusieurs personnes ont la même ville dans leur adresse, cette ville n'apparaîtra qu'une seule fois dans le résultat.
+-> ['Bejaia', 'Alger']
+___________________________________________________________________________________________________________________
+
+1. Explication des requêtes  :
+----------------------------
+
+CREATE TYPE personneType AS OBJECT (nom VARCHAR2(30), prenom VARCHAR2(30), adresse adresseType);
+
+Cette requête crée un type d'objet personnalisé appelé personneType. Cet objet a les attributs suivants :
+nom : de type VARCHAR2(30) (chaîne de caractères de longueur maximale 30)
+prenom : de type VARCHAR2(30) (chaîne de caractères de longueur maximale 30)
+adresse : de type adresseType, qui est un type d'objet distinct que vous devez avoir défini précédemment.
+
+
+
+CREATE TABLE Personnes2 OF personneType;
+-> table objet
+Cette requête crée une table nommée Personnes2 qui est basée sur le type d'objet personneType. En d'autres termes, la table Personnes2 est composée de lignes, chaque ligne contenant des données structurées selon le modèle défini dans le type personneType. Cette table stockera des informations sur des personnes, y compris leur nom, prénom et adresse.
+
+
+
+INSERT INTO Personnes2 VALUES (personneType('Adi', 'Sara', adresseType(10, 'rue Albert Monge', '16000', 'Alger')));
+Cette requête insère une nouvelle ligne dans la table Personnes2. La ligne contient un objet de type personneType avec les valeurs 'Adi' pour le nom, 'Sara' pour le prénom, et un objet de type adresseType représentant l'adresse.
+
+
+
+CREATE TABLE bureau (numero NUMBER(3), etage NUMBER(2), occupant REF personneType);
+
+Cette requête crée une autre table appelée bureau. Cette table a trois colonnes :
+numero : de type NUMBER(3) (nombre à 3 chiffres)
+etage : de type NUMBER(2) (nombre à 2 chiffres)
+occupant : de type REF personneType, ce qui signifie que cette colonne peut stocker des références (ou des liens) vers des objets de type personneType. Elle sera utilisée pour indiquer qui occupe un bureau.
+
+
+
+INSERT INTO bureau VALUES (219, 2, null);
+
+Cette requête insère une ligne dans la table bureau. Elle assigne le numéro de bureau 219, l'étage 2, et l'occupant est initialisé à null, ce qui signifie qu'aucune personne n'occupe actuellement ce bureau.
+
+
+
+UPDATE bureau SET occupant = (SELECT REF(p) FROM Personnes2 p WHERE p.nom = 'Adi') WHERE numero = 219;
+
+Cette requête met à jour la table bureau. Elle assigne un occupant au bureau numéro 219. Elle recherche d'abord la référence de la personne ayant le nom 'Adi' dans la table Personnes2 et utilise cette référence comme valeur pour la colonne occupant du bureau numéro 219. Cela signifie que le bureau numéro 219 est maintenant occupé par la personne nommée 'Adi'.
+
+
